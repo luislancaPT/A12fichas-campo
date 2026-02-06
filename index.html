@@ -1,0 +1,1667 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Fichas Campo">
+    <meta name="theme-color" content="#1a5276">
+    <title>Fichas de Campo | Neuroarquitectura</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        :root { --primary: #1a5276; --primary-light: #2980b9; --success: #27ae60; --danger: #e74c3c; --warning: #f39c12; --info: #3498db; --bg: #f5f5f5; --card: #fff; --text: #333; --border: #ddd; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+        
+        .header { background: linear-gradient(135deg, #1a5276, #2c3e50); color: #fff; padding: 12px 15px; position: sticky; top: 0; z-index: 100; }
+        .header-row { display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 1.1rem; }
+        .header-badges { display: flex; gap: 8px; align-items: center; }
+        .badge { padding: 4px 10px; border-radius: 15px; font-size: 0.7rem; font-weight: 600; }
+        .badge-form { background: #16a085; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .badge-offline { background: var(--warning); }
+        .badge-online { background: var(--success); }
+        
+        .sync-bar { background: #2c3e50; padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #fff; }
+        .sync-bar.pending { background: #c0392b; }
+        .sync-btn { background: #fff; color: #1a5276; border: none; padding: 6px 12px; border-radius: 5px; font-weight: 600; font-size: 0.75rem; }
+        
+        .nav { background: #fff; padding: 8px; overflow-x: auto; white-space: nowrap; border-bottom: 1px solid var(--border); position: sticky; top: 48px; z-index: 90; }
+        .nav button { display: inline-block; padding: 6px 10px; margin-right: 4px; border: none; background: #eee; border-radius: 5px; font-size: 0.75rem; }
+        .nav button.active { background: var(--primary); color: #fff; }
+        
+        .container { max-width: 800px; margin: 0 auto; padding: 12px; padding-bottom: 100px; }
+        
+        .section { display: none; }
+        .section.active { display: block; }
+        
+        .card { background: var(--card); border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+        .card h2 { font-size: 1rem; color: var(--primary); margin-bottom: 12px; padding-bottom: 10px; border-bottom: 2px solid #f0f0f0; display: flex; align-items: center; gap: 8px; }
+        .card h3 { font-size: 0.9rem; margin-bottom: 8px; color: #444; }
+        
+        /* Rubric indicator */
+        .rubric-tag { background: linear-gradient(135deg, #f39c12, #e74c3c); color: #fff; font-size: 0.65rem; padding: 3px 8px; border-radius: 10px; font-weight: 600; }
+        
+        /* Required indicator */
+        .required-box { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 10px; margin-bottom: 12px; font-size: 0.8rem; }
+        .required-box h4 { color: #856404; margin-bottom: 5px; font-size: 0.85rem; }
+        .required-box ul { margin-left: 15px; color: #856404; }
+        .required-box li { margin-bottom: 3px; }
+        
+        /* Tips */
+        .tip-box { background: #e8f4f8; border-left: 4px solid var(--info); padding: 10px; margin-bottom: 12px; font-size: 0.8rem; }
+        .tip-box strong { color: var(--primary); }
+        
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-weight: 500; font-size: 0.85rem; margin-bottom: 5px; color: #444; }
+        .label-hint { font-weight: 400; color: #888; font-size: 0.75rem; display: block; margin-top: 2px; }
+        
+        input, textarea, select { width: 100%; padding: 12px; border: 2px solid var(--border); border-radius: 8px; font-size: 16px; font-family: inherit; background: #fff; -webkit-appearance: none; }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: var(--primary); }
+        textarea { min-height: 80px; resize: vertical; }
+        textarea.large { min-height: 120px; }
+        
+        .channel { background: #f8f9fa; border-radius: 8px; padding: 12px; margin-bottom: 10px; border-left: 4px solid var(--primary); }
+        .channel.visual { border-color: #3498db; }
+        .channel.auditivo { border-color: #9b59b6; }
+        .channel.olfativo { border-color: #f1c40f; }
+        .channel.termico { border-color: #e74c3c; }
+        .channel.tactil { border-color: #1abc9c; }
+        .channel.espacial { border-color: #34495e; }
+        .channel h3 { font-size: 0.9rem; margin-bottom: 8px; }
+        .channel-hint { font-size: 0.75rem; color: #666; margin-bottom: 8px; font-style: italic; }
+        
+        .scale-row { margin-bottom: 15px; background: #f8f9fa; border-radius: 8px; padding: 12px; }
+        .scale-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 5px; }
+        .scale-desc { font-size: 0.75rem; color: #666; margin-bottom: 8px; }
+        .scale-labels { display: flex; justify-content: space-between; font-size: 0.7rem; color: #888; margin-bottom: 5px; }
+        .scale-btns { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+        .scale-btn { width: 30px; height: 30px; border: 2px solid var(--border); background: #fff; border-radius: 5px; font-weight: 600; font-size: 0.8rem; }
+        .scale-btn.selected { background: var(--primary); color: #fff; border-color: var(--primary); }
+        
+        .radio-group { display: flex; flex-direction: column; gap: 8px; }
+        .radio-item { display: flex; align-items: flex-start; gap: 10px; padding: 12px; background: #f8f9fa; border-radius: 8px; border: 2px solid transparent; }
+        .radio-item.selected { border-color: var(--primary); background: #e8f4f8; }
+        .radio-item input { width: 18px; height: 18px; margin-top: 2px; }
+        .radio-label { flex: 1; }
+        .radio-label strong { display: block; font-size: 0.9rem; }
+        .radio-label span { font-size: 0.75rem; color: #666; }
+        
+        .quadrant-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: #ddd; border-radius: 10px; overflow: hidden; margin: 10px 0; }
+        .quadrant { padding: 15px 10px; text-align: center; cursor: pointer; }
+        .quadrant.selected { box-shadow: inset 0 0 0 3px var(--primary); }
+        .q1 { background: #ffebee; }
+        .q2 { background: #e8f5e9; }
+        .q3 { background: #e3f2fd; }
+        .q4 { background: #fffde7; }
+        .quadrant strong { display: block; font-size: 0.8rem; }
+        .quadrant span { font-size: 0.7rem; color: #666; }
+        
+        .stim-card { background: #fff; border: 2px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+        .stim-card h4 { font-size: 0.85rem; margin-bottom: 8px; color: var(--primary); }
+        .stim-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
+        .stim-row input { flex: 1; min-width: 150px; }
+        .stim-btns { display: flex; gap: 4px; }
+        .stim-btn { padding: 8px 12px; border: 2px solid; border-radius: 5px; font-size: 0.75rem; font-weight: 600; background: #fff; }
+        .stim-btn.signal { border-color: var(--success); color: var(--success); }
+        .stim-btn.noise { border-color: var(--danger); color: var(--danger); }
+        .stim-btn.selected { color: #fff; }
+        .stim-btn.signal.selected { background: var(--success); }
+        .stim-btn.noise.selected { background: var(--danger); }
+        
+        .intervention { background: linear-gradient(135deg, #f8f9fa, #fff); border: 2px solid var(--primary); border-radius: 10px; padding: 15px; margin-bottom: 15px; }
+        .intervention h3 { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; color: var(--primary); }
+        .int-num { width: 28px; height: 28px; background: var(--primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; }
+        .chain-step { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .chain-arrow { background: var(--success); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; }
+        .chain-step input { flex: 1; padding: 10px; font-size: 14px; }
+        
+        .photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 10px 0; }
+        .photo-upload { aspect-ratio: 4/3; border: 2px dashed var(--border); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; background: #f8f9fa; position: relative; overflow: hidden; }
+        .photo-upload.has-image { border-style: solid; border-color: var(--success); }
+        .photo-upload img { width: 100%; height: 100%; object-fit: cover; }
+        .photo-upload input { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+        .photo-placeholder { text-align: center; color: #888; font-size: 0.8rem; }
+        .photo-label { margin-top: 5px; }
+        .photo-label input { padding: 8px; font-size: 14px; }
+        
+        .integration-box { background: linear-gradient(135deg, #e8f4f8, #fff); border: 2px solid var(--info); border-radius: 10px; padding: 15px; margin-bottom: 15px; }
+        .integration-box h3 { color: var(--info); margin-bottom: 10px; font-size: 0.95rem; }
+        
+        .btn { display: inline-block; padding: 12px 18px; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; text-align: center; }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-secondary { background: #eee; color: #333; }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-block { display: block; width: 100%; }
+        
+        .nav-btns { display: flex; gap: 10px; justify-content: space-between; margin-top: 20px; padding-top: 15px; border-top: 2px solid #eee; }
+        
+        .form-item { display: flex; align-items: center; gap: 10px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; border: 2px solid transparent; }
+        .form-item.active { border-color: var(--primary); background: #e8f4f8; }
+        .form-item.pending { border-left: 4px solid var(--warning); }
+        .form-item.synced { border-left: 4px solid var(--success); }
+        .form-item-icon { width: 36px; height: 36px; background: var(--primary); color: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+        .form-item-info { flex: 1; }
+        .form-item-title { font-weight: 600; font-size: 0.85rem; }
+        .form-item-meta { font-size: 0.7rem; color: #888; }
+        .form-item-btn { width: 30px; height: 30px; border: none; border-radius: 6px; color: #fff; }
+        .form-item-btn.delete { background: var(--danger); }
+        
+        .export-box { background: #e8f4f8; border: 2px solid var(--primary); border-radius: 10px; padding: 15px; margin-bottom: 15px; }
+        .export-box h3 { color: var(--primary); margin-bottom: 10px; }
+        .export-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+        .export-btn { padding: 10px 15px; background: #fff; border: 2px solid var(--primary); border-radius: 8px; color: var(--primary); font-weight: 600; font-size: 0.85rem; }
+        
+        .copy-area { margin-top: 12px; display: none; }
+        .copy-area.show { display: block; }
+        .copy-area textarea { font-family: monospace; font-size: 0.7rem; height: 100px; }
+        
+        .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: center; justify-content: center; padding: 15px; }
+        .modal.show { display: flex; }
+        .modal-content { background: #fff; border-radius: 12px; width: 100%; max-width: 500px; max-height: 85vh; overflow: hidden; }
+        .modal-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h2 { font-size: 1.1rem; }
+        .modal-close { background: none; border: none; font-size: 1.5rem; color: #888; }
+        .modal-body { padding: 15px; max-height: 65vh; overflow-y: auto; }
+        .modal-footer { padding: 12px 15px; border-top: 1px solid #eee; display: flex; gap: 10px; justify-content: flex-end; }
+        
+        .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 12px 24px; border-radius: 8px; z-index: 1000; display: none; font-size: 0.85rem; }
+        .toast.show { display: block; }
+        
+        .status-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #2c3e50; color: #fff; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; z-index: 100; }
+        .status-bar.has-pending { background: #c0392b; }
+        
+        .checklist { background: #f0fff4; border: 2px solid var(--success); border-radius: 8px; padding: 12px; margin-bottom: 15px; }
+        .checklist h4 { color: var(--success); margin-bottom: 8px; font-size: 0.9rem; }
+        .checklist-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 0.85rem; }
+        .checklist-item.done { color: var(--success); }
+        .checklist-item.pending { color: #888; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-row">
+        <h1>📋 Fichas de Campo</h1>
+        <div class="header-badges">
+            <span class="badge badge-form" id="currentFormBadge">Nova</span>
+            <span class="badge" id="networkBadge">⏳</span>
+        </div>
+    </div>
+</div>
+
+<div class="sync-bar" id="syncBar">
+    <span id="syncInfo">💾 Guardado localmente</span>
+    <button class="sync-btn" onclick="showSyncModal()">📤 Exportar</button>
+</div>
+
+<div class="nav" id="nav"></div>
+
+<div class="container">
+    <div id="sectionsContainer"></div>
+</div>
+
+<!-- Modals -->
+<div class="modal" id="syncModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>📤 Exportar</h2>
+            <button class="modal-close" onclick="closeModal('syncModal')">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="export-box">
+                <h3>📋 Copiar para Google Sheets</h3>
+                <button class="export-btn" onclick="copyAllForSheets()">📋 Copiar Todas as Fichas</button>
+                <div class="copy-area" id="sheetsArea">
+                    <textarea id="sheetsText" readonly onclick="this.select()"></textarea>
+                    <p style="font-size:0.75rem;color:#666;margin-top:5px;">👆 Toque → Selecionar tudo → Copiar</p>
+                </div>
+            </div>
+            <div class="export-box">
+                <h3>💾 Ficheiros</h3>
+                <div class="export-btns">
+                    <button class="export-btn" onclick="exportAllJSON()">📄 JSON (backup)</button>
+                    <button class="export-btn" onclick="exportAllCSV()">📊 CSV</button>
+                </div>
+            </div>
+            <div class="export-box">
+                <h3>📥 Importar</h3>
+                <input type="file" id="importFile" accept=".json" onchange="importBackup(this)" style="font-size:14px;">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('syncModal')">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="formsModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>📁 Fichas Guardadas</h2>
+            <button class="modal-close" onclick="closeModal('formsModal')">×</button>
+        </div>
+        <div class="modal-body" id="formsList"></div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('formsModal')">Fechar</button>
+            <button class="btn btn-primary" onclick="newForm(); closeModal('formsModal');">➕ Nova</button>
+        </div>
+    </div>
+</div>
+
+<div class="status-bar" id="statusBar">
+    <span id="statusText">💾 Pronto</span>
+    <span id="pendingCount"></span>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== APP STATE =====
+var APP = {
+    currentFormId: null,
+    currentSection: 0,
+    forms: {},
+    isOnline: navigator.onLine
+};
+
+// ===== SECTIONS =====
+var SECTIONS = [
+    { id: 0, short: 'Início' },
+    { id: 1, short: '1.Espacio' },
+    { id: 2, short: '2.Amb' },
+    { id: 3, short: '3.Señal' },
+    { id: 4, short: '4.Aten' },
+    { id: 5, short: '5.Perc' },
+    { id: 6, short: '6.Acción' },
+    { id: 7, short: '7.Emo' },
+    { id: 8, short: '8.Integr' },
+    { id: 9, short: '9.Interv' },
+    { id: 10, short: '💾' }
+];
+
+// ===== INIT =====
+function init() {
+    loadForms();
+    buildUI();
+    setupNetwork();
+    
+    var lastId = localStorage.getItem('lastFormId');
+    if (lastId && APP.forms[lastId]) {
+        loadForm(lastId);
+    } else if (Object.keys(APP.forms).length > 0) {
+        loadForm(Object.keys(APP.forms)[0]);
+    } else {
+        newForm();
+    }
+    
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function(e) { console.log('SW error', e); });
+    }
+}
+
+function buildUI() {
+    // Nav
+    document.getElementById('nav').innerHTML = SECTIONS.map(function(s) {
+        return '<button onclick="goTo(' + s.id + ')">' + s.short + '</button>';
+    }).join('');
+    
+    // Sections
+    var container = document.getElementById('sectionsContainer');
+    container.innerHTML = '';
+    for (var i = 0; i <= 10; i++) {
+        var div = document.createElement('div');
+        div.className = 'section';
+        div.id = 'sec' + i;
+        div.innerHTML = buildSection(i);
+        container.appendChild(div);
+    }
+    
+    // Init scales
+    initAllScales();
+}
+
+function buildSection(id) {
+    switch(id) {
+        case 0: return sectionStart();
+        case 1: return sectionEspacio();
+        case 2: return sectionAmbiental();
+        case 3: return sectionSenalRuido();
+        case 4: return sectionAtencion();
+        case 5: return sectionPercepcion();
+        case 6: return sectionGuionAccion();
+        case 7: return sectionEmocion();
+        case 8: return sectionIntegracion();
+        case 9: return sectionIntervencion();
+        case 10: return sectionExport();
+    }
+}
+
+// ===== SECTION 0: START =====
+function sectionStart() {
+    return `
+    <div class="card">
+        <h2>📝 Identificación</h2>
+        <div class="form-group">
+            <label>Nombre del observador *</label>
+            <input type="text" id="nombre" onchange="save()">
+        </div>
+        <div class="form-group">
+            <label>Fecha de observación *</label>
+            <input type="date" id="fecha" onchange="save()">
+        </div>
+        <div class="form-group">
+            <label>Hora de inicio</label>
+            <input type="time" id="horaInicio" onchange="save()">
+        </div>
+        <div class="form-group">
+            <label>Hora de fin</label>
+            <input type="time" id="horaFin" onchange="save()">
+        </div>
+    </div>
+    <div class="card">
+        <h2>📁 Gestão de Fichas</h2>
+        <button class="btn btn-primary btn-block" onclick="newForm()" style="margin-bottom:10px;">➕ Nova Ficha</button>
+        <button class="btn btn-secondary btn-block" onclick="showModal('formsModal'); renderFormsList();">📁 Ver Todas</button>
+    </div>
+    ${navBtns(null, 1)}`;
+}
+
+// ===== SECTION 1: ESPACIO (Criterio 1) =====
+function sectionEspacio() {
+    return `
+    <div class="required-box">
+        <h4>📋 CRITERIO 1: Selección y descripción del espacio (0-2 pts)</h4>
+        <ul>
+            <li>Espacio claramente <strong>contextualizado</strong></li>
+            <li>Actividad objetivo <strong>bien definida</strong></li>
+            <li>Documentación visual <strong>completa y pertinente</strong></li>
+        </ul>
+    </div>
+    
+    <div class="card">
+        <h2>🏢 Identificación del Espacio <span class="rubric-tag">CRITERIO 1</span></h2>
+        
+        <div class="form-group">
+            <label>Nombre/tipo del espacio *
+                <span class="label-hint">Ej: Sala de espera de Urgencias - Hospital General de Alicante</span>
+            </label>
+            <input type="text" id="nombreEspacio" placeholder="Tipo + Nombre específico" onchange="save()">
+        </div>
+        
+        <div class="form-group">
+            <label>Ubicación exacta *
+                <span class="label-hint">Dirección, planta, zona del edificio</span>
+            </label>
+            <input type="text" id="ubicacion" onchange="save()">
+        </div>
+        
+        <div class="form-group">
+            <label>Contexto del espacio *
+                <span class="label-hint">¿Por qué es relevante este espacio? ¿Qué problema o situación se analiza?</span>
+            </label>
+            <textarea id="contextoEspacio" class="large" placeholder="Describa el contexto: tipo de usuarios, momento del día, situación típica, por qué eligió este espacio..." onchange="save()"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label>Condiciones durante la observación</label>
+            <select id="meteo" onchange="save()">
+                <option value="">Seleccione...</option>
+                <option value="soleado">☀️ Soleado / Luz natural intensa</option>
+                <option value="nublado">☁️ Nublado / Luz natural difusa</option>
+                <option value="lluvioso">🌧️ Lluvioso</option>
+                <option value="noche">🌙 Noche / Iluminación artificial</option>
+                <option value="interior">🏠 Interior sin luz natural</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Ocupación durante la observación</label>
+            <select id="ocupacion" onchange="save()">
+                <option value="">Seleccione...</option>
+                <option value="vacio">Vacío (0-2 personas)</option>
+                <option value="bajo">Baja ocupación (3-10 personas)</option>
+                <option value="medio">Ocupación media (11-25 personas)</option>
+                <option value="alto">Alta ocupación (26-50 personas)</option>
+                <option value="saturado">Saturado (+50 personas)</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>🎯 Actividad Objetivo * <span class="rubric-tag">CRITERIO 1</span></h2>
+        
+        <div class="tip-box">
+            <strong>💡 Importante:</strong> Seleccione UNA actividad. Todo el análisis se hará desde la perspectiva de esta actividad.
+        </div>
+        
+        <div class="radio-group">
+            <label class="radio-item" onclick="selectRadio(this,'actividad','wayfinding')">
+                <input type="radio" name="actividad" value="wayfinding">
+                <div class="radio-label">
+                    <strong>🧭 Orientarse / Wayfinding</strong>
+                    <span>Encontrar un destino, entender el espacio, saber dónde ir</span>
+                </div>
+            </label>
+            <label class="radio-item" onclick="selectRadio(this,'actividad','esperar')">
+                <input type="radio" name="actividad" value="esperar">
+                <div class="radio-label">
+                    <strong>⏳ Esperar con el menor estrés posible</strong>
+                    <span>Aguardar sin ansiedad, gestionar la incertidumbre</span>
+                </div>
+            </label>
+            <label class="radio-item" onclick="selectRadio(this,'actividad','concentrarse')">
+                <input type="radio" name="actividad" value="concentrarse">
+                <div class="radio-label">
+                    <strong>📚 Concentrarse / Trabajar / Estudiar</strong>
+                    <span>Mantener el foco, evitar distracciones</span>
+                </div>
+            </label>
+            <label class="radio-item" onclick="selectRadio(this,'actividad','recuperarse')">
+                <input type="radio" name="actividad" value="recuperarse">
+                <div class="radio-label">
+                    <strong>🧘 Recuperarse / Descansar</strong>
+                    <span>Restaurar recursos cognitivos, relajarse</span>
+                </div>
+            </label>
+            <label class="radio-item" onclick="selectRadio(this,'actividad','socializar')">
+                <input type="radio" name="actividad" value="socializar">
+                <div class="radio-label">
+                    <strong>👥 Socializar / Interactuar</strong>
+                    <span>Comunicarse, colaborar, relacionarse</span>
+                </div>
+            </label>
+            <label class="radio-item" onclick="selectRadio(this,'actividad','otra')">
+                <input type="radio" name="actividad" value="otra">
+                <div class="radio-label">
+                    <strong>📝 Otra actividad</strong>
+                    <span>Especifique abajo</span>
+                </div>
+            </label>
+        </div>
+        <input type="text" id="actividadOtra" placeholder="Si eligió 'Otra', descríbala aquí..." style="margin-top:10px;" onchange="save()">
+        
+        <div class="form-group" style="margin-top:15px;">
+            <label>Justificación de la actividad elegida *
+                <span class="label-hint">¿Por qué esta actividad es relevante para este espacio?</span>
+            </label>
+            <textarea id="actividadJustificacion" placeholder="Explique por qué eligió esta actividad y qué espera observar..." onchange="save()"></textarea>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>📸 Documentación Visual * <span class="rubric-tag">CRITERIO 1</span></h2>
+        
+        <div class="tip-box">
+            <strong>💡 Para puntuación máxima:</strong> Incluya fotos que documenten los aspectos más relevantes del espacio. Añada descripción a cada foto.
+        </div>
+        
+        <div class="photo-grid">
+            <div>
+                <div class="photo-upload" id="photo1">
+                    <input type="file" accept="image/*" onchange="handlePhoto(this,'photo1')">
+                    <div class="photo-placeholder">📷 Foto 1<br>Vista general</div>
+                </div>
+                <div class="photo-label"><input type="text" id="photo1Desc" placeholder="Descripción foto 1..." onchange="save()"></div>
+            </div>
+            <div>
+                <div class="photo-upload" id="photo2">
+                    <input type="file" accept="image/*" onchange="handlePhoto(this,'photo2')">
+                    <div class="photo-placeholder">📷 Foto 2<br>Detalle relevante</div>
+                </div>
+                <div class="photo-label"><input type="text" id="photo2Desc" placeholder="Descripción foto 2..." onchange="save()"></div>
+            </div>
+            <div>
+                <div class="photo-upload" id="photo3">
+                    <input type="file" accept="image/*" onchange="handlePhoto(this,'photo3')">
+                    <div class="photo-placeholder">📷 Foto 3<br>Problema/oportunidad</div>
+                </div>
+                <div class="photo-label"><input type="text" id="photo3Desc" placeholder="Descripción foto 3..." onchange="save()"></div>
+            </div>
+            <div>
+                <div class="photo-upload" id="photo4">
+                    <input type="file" accept="image/*" onchange="handlePhoto(this,'photo4')">
+                    <div class="photo-placeholder">📷 Foto 4<br>Usuarios/conductas</div>
+                </div>
+                <div class="photo-label"><input type="text" id="photo4Desc" placeholder="Descripción foto 4..." onchange="save()"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>📏 Mediciones Ambientales</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+            <div class="form-group">
+                <label>💡 Iluminación (lux)</label>
+                <input type="number" id="lux" placeholder="300-500" onchange="save()">
+            </div>
+            <div class="form-group">
+                <label>🔊 Ruido (dB)</label>
+                <input type="number" id="db" placeholder="40-60" onchange="save()">
+            </div>
+            <div class="form-group">
+                <label>🌡️ Temperatura (°C)</label>
+                <input type="number" id="temp" placeholder="20-24" onchange="save()">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Descripción cualitativa del ambiente
+                <span class="label-hint">Si no dispone de instrumentos, describa sus percepciones</span>
+            </label>
+            <textarea id="descripcionAmbiente" placeholder="Describa iluminación, acústica, temperatura, calidad del aire..." onchange="save()"></textarea>
+        </div>
+    </div>
+    ${navBtns(0, 2)}`;
+}
+
+// ===== SECTION 2: AMBIENTAL (Criterio 2) =====
+function sectionAmbiental() {
+    return `
+    <div class="required-box">
+        <h4>📋 CRITERIO 2: Análisis de la estimulación ambiental (0-2 pts)</h4>
+        <ul>
+            <li>Análisis <strong>sistemático</strong> de estímulos por canal</li>
+            <li>Identificación clara de <strong>señal vs ruido</strong></li>
+            <li>Identificación de <strong>posibles interferencias</strong></li>
+        </ul>
+    </div>
+    
+    <div class="card">
+        <h2>🌐 Estimulación Ambiental por Canal <span class="rubric-tag">CRITERIO 2</span></h2>
+        
+        <div class="tip-box">
+            <strong>💡 Para puntuación máxima:</strong> Sea sistemático. Para cada canal, liste TODOS los estímulos presentes, sean positivos o negativos.
+        </div>
+        
+        <div class="channel visual">
+            <h3>👁️ CANAL VISUAL</h3>
+            <div class="channel-hint">Iluminación, colores, formas, carteles, pantallas, vistas, contrastes, movimiento visual...</div>
+            <textarea id="estVisual" class="large" placeholder="Liste todos los estímulos visuales presentes..." onchange="save()"></textarea>
+        </div>
+        
+        <div class="channel auditivo">
+            <h3>👂 CANAL AUDITIVO</h3>
+            <div class="channel-hint">Ruido de fondo, conversaciones, música, alarmas, sistemas de megafonía, eco, reverberación...</div>
+            <textarea id="estAuditivo" class="large" placeholder="Liste todos los estímulos auditivos presentes..." onchange="save()"></textarea>
+        </div>
+        
+        <div class="channel olfativo">
+            <h3>👃 CANAL OLFATIVO</h3>
+            <div class="channel-hint">Olores naturales, artificiales, desinfectante, comida, aire viciado, ventilación...</div>
+            <textarea id="estOlfativo" placeholder="Liste los estímulos olfativos presentes..." onchange="save()"></textarea>
+        </div>
+        
+        <div class="channel termico">
+            <h3>🌡️ CANAL TÉRMICO</h3>
+            <div class="channel-hint">Temperatura, corrientes de aire, humedad, zonas frías/calientes, aire acondicionado...</div>
+            <textarea id="estTermico" placeholder="Liste los estímulos térmicos presentes..." onchange="save()"></textarea>
+        </div>
+        
+        <div class="channel tactil">
+            <h3>✋ CANAL TÁCTIL / HÁPTICO</h3>
+            <div class="channel-hint">Texturas, materiales, ergonomía del mobiliario, suelo, barandillas...</div>
+            <textarea id="estTactil" placeholder="Liste los estímulos táctiles presentes..." onchange="save()"></textarea>
+        </div>
+        
+        <div class="channel espacial">
+            <h3>📐 CONFIGURACIÓN ESPACIAL</h3>
+            <div class="channel-hint">Dimensiones, proporciones, alturas, distribución, recorridos, densidad, privacidad...</div>
+            <textarea id="estEspacial" placeholder="Describa la configuración espacial..." onchange="save()"></textarea>
+        </div>
+    </div>
+    ${navBtns(1, 3)}`;
+}
+
+// ===== SECTION 3: SEÑAL VS RUIDO (Criterio 2 cont.) =====
+function sectionSenalRuido() {
+    var stims = '';
+    for (var i = 1; i <= 6; i++) {
+        stims += `
+        <div class="stim-card">
+            <h4>Estímulo ${i}</h4>
+            <div class="form-group">
+                <input type="text" id="stim${i}Nombre" placeholder="Nombre del estímulo" onchange="save()">
+            </div>
+            <div class="form-group">
+                <input type="text" id="stim${i}Canal" placeholder="Canal sensorial (visual, auditivo...)" onchange="save()">
+            </div>
+            <div class="stim-row">
+                <div class="stim-btns">
+                    <button class="stim-btn signal" id="stim${i}S" onclick="toggleSN('stim${i}','S')">✓ SEÑAL</button>
+                    <button class="stim-btn noise" id="stim${i}R" onclick="toggleSN('stim${i}','R')">✗ RUIDO</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <textarea id="stim${i}Just" placeholder="¿Por qué es señal o ruido para la actividad objetivo?" onchange="save()"></textarea>
+            </div>
+        </div>`;
+    }
+    
+    return `
+    <div class="card">
+        <h2>⚡ Clasificación Señal vs Ruido <span class="rubric-tag">CRITERIO 2</span></h2>
+        
+        <div class="tip-box">
+            <strong>💡 Definiciones:</strong><br>
+            <strong>SEÑAL (✓):</strong> Estímulo que AYUDA a realizar la actividad objetivo<br>
+            <strong>RUIDO (✗):</strong> Estímulo que DIFICULTA o DISTRAE de la actividad objetivo
+        </div>
+        
+        ${stims}
+    </div>
+    
+    <div class="card">
+        <h2>⚠️ Interferencias Multisensoriales <span class="rubric-tag">CRITERIO 2</span></h2>
+        
+        <div class="tip-box">
+            <strong>💡 Para puntuación máxima:</strong> Identifique si hay conflictos entre canales sensoriales (ej: visual calmado pero auditivo caótico).
+        </div>
+        
+        <div class="form-group">
+            <label>¿Hay conflictos o incongruencias entre canales sensoriales? *</label>
+            <textarea id="conflictosSensoriales" class="large" placeholder="Describa cualquier conflicto: ej. 'El espacio visual es ordenado y minimalista, pero el canal auditivo presenta ruido constante de aire acondicionado y conversaciones, creando una incongruencia que aumenta la carga cognitiva...'" onchange="save()"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label>¿Hay sobrecarga o infra-estimulación en algún canal?</label>
+            <textarea id="cargaSensorial" placeholder="Ej: 'Sobrecarga visual por exceso de carteles informativos' o 'Infra-estimulación auditiva que genera sensación de vacío...'" onchange="save()"></textarea>
+        </div>
+    </div>
+    ${navBtns(2, 4)}`;
+}
+
+// ===== SECTION 4: ATENCIÓN (Criterio 3) =====
+function sectionAtencion() {
+    return `
+    <div class="required-box">
+        <h4>📋 CRITERIO 3: Registro y valoración de la atención (0-2 pts)</h4>
+        <ul>
+            <li>Puntuaciones <strong>bien fundamentadas</strong></li>
+            <li>Claramente <strong>relacionadas con el entorno y la tarea</strong></li>
+        </ul>
+    </div>
+    
+    <div class="card">
+        <h2>🧠 Registro Atencional <span class="rubric-tag">CRITERIO 3</span></h2>
+        
+        <div class="tip-box">
+            <strong>💡 Para puntuación máxima:</strong> Justifique CADA puntuación relacionándola con estímulos concretos del espacio y con la actividad objetivo.
+        </div>
+        
+        <div class="scale-row">
+            <div class="scale-title">🎯 ATENCIÓN SELECTIVA</div>
+            <div class="scale-desc">Capacidad de filtrar distractores y focalizarse en lo relevante</div>
+            <div class="scale-labels"><span>0 = Sin distractores</span><span>10 = Distractores constantes</span></div>
+            <div class="scale-btns" id="scale_atSelectiva"></div>
+            <textarea id="atSelectivaJust" placeholder="JUSTIFICACIÓN OBLIGATORIA: ¿Qué estímulos concretos actúan como distractores? ¿Cómo afectan a la actividad objetivo?" onchange="save()"></textarea>
+        </div>
+        
+        <div class="scale-row">
+            <div class="scale-title">⏱️ ATENCIÓN SOSTENIDA</div>
+            <div class="scale-desc">Capacidad de mantener el foco durante tiempo prolongado</div>
+            <div class="scale-labels"><span>0 = Permite mantener foco</span><span>10 = Fatiga rápida</span></div>
+            <div class="scale-btns" id="scale_atSostenida"></div>
+            <textarea id="atSostenidaJust" placeholder="JUSTIFICACIÓN OBLIGATORIA: ¿Qué elementos del espacio favorecen o dificultan mantener la atención? ¿En cuánto tiempo se produciría fatiga?" onchange="save()"></textarea>
+        </div>
+        
+        <div class="scale-row">
+            <div class="scale-title">🧭 ORIENTACIÓN ESPACIAL</div>
+            <div class="scale-desc">Facilidad para dirigir la atención hacia lo relevante del espacio</div>
+            <div class="scale-labels"><span>0 = Confuso, sin guía</span><span>10 = Muy claro, guía evidente</span></div>
+            <div class="scale-btns" id="scale_atOrientacion"></div>
+            <textarea id="atOrientacionJust" placeholder="JUSTIFICACIÓN OBLIGATORIA: ¿Hay señalética? ¿Jerarquía visual? ¿El usuario sabe dónde mirar/ir?" onchange="save()"></textarea>
+        </div>
+        
+        <div class="scale-row">
+            <div class="scale-title">🎛️ CONTROL EJECUTIVO</div>
+            <div class="scale-desc">Necesidad de inhibir estímulos irrelevantes o impulsos</div>
+            <div class="scale-labels"><span>0 = Sin conflicto</span><span>10 = Exige inhibición constante</span></div>
+            <div class="scale-btns" id="scale_atEjecutivo"></div>
+            <textarea id="atEjecutivoJust" placeholder="JUSTIFICACIÓN OBLIGATORIA: ¿Hay estímulos que compiten por la atención? ¿El usuario debe 'resistir' distracciones?" onchange="save()"></textarea>
+        </div>
+        
+        <div class="scale-row">
+            <div class="scale-title">🔀 ATENCIÓN DIVIDIDA</div>
+            <div class="scale-desc">Posibilidad de atender a varias cosas simultáneamente</div>
+            <div class="scale-labels"><span>0 = Permite multitarea</span><span>10 = Multitarea imposible</span></div>
+            <div class="scale-btns" id="scale_atDividida"></div>
+            <textarea id="atDivididaJust" placeholder="JUSTIFICACIÓN OBLIGATORIA: ¿El espacio permite hacer dos cosas a la vez (ej: esperar y leer)? ¿Por qué?" onchange="save()"></textarea>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>📊 Síntesis Atencional</h2>
+        <div class="form-group">
+            <label>Conclusión sobre el impacto atencional del espacio *
+                <span class="label-hint">Resuma cómo el espacio afecta globalmente a la atención para la actividad objetivo</span>
+            </label>
+            <textarea id="sintesisAtencion" class="large" placeholder="En general, este espacio [favorece/dificulta] la atención porque... Los principales problemas son... Las fortalezas son..." onchange="save()"></textarea>
+        </div>
+    </div>
+    ${navBtns(3, 5)}`;
+}
+
+// ===== SECTION 5: PERCEPCIÓN (Criterio 4) =====
+function sectionPercepcion() {
+    return `
+    <div class="required-box">
+        <h4>📋 CRITERIO 4: Análisis perceptivo y emocional (0-2 pts)</h4>
+        <ul>
+            <li>Análisis que vincula <strong>percepción + guion de acción + emoción + conductas</strong></li>
+        </ul>
+    </div>
+    
+    <div class="card">
+        <h2>👁️ Percepción del Espacio <span class="rubric-tag">CRITERIO 4</span></h2>
+        
+        <div class="tip-box">
+            <strong>💡 Para puntuación máxima:</strong> Evalúe qué "comunica" el espacio al usuario a nivel perceptivo. Justifique con elementos concretos.
+        </div>
+        
+        <div class="scale-row">
+            <div class="scale-title">🔐 INSEGURO ↔ SEGURO</div>
+            <div class="scale-desc">¿El espacio transmite sensación de seguridad o amenaza?</div>
+            <div class="scale-btns" id="scale_percSeguro"></div>
+            <textarea id="percSeguroJust" placeholder="¿Qué elementos generan seguridad o inseguridad? (visibilidad, control, iluminación, presencia de otros...)" onchange="save()"></textarea>
+        </div>
+        
+        <div class="scale-row">
+            <div class="scale-title">🌪️ CAÓTICO ↔ ORDENADO</div>
+            <div class="scale-desc">¿El espacio transmite orden o caos?</div>
+            <div class="scale-btns" id="scale_percOrdenado"></div>
+            <textarea id="percOrdenadoJust" placeholder="¿Qué elementos generan orden o caos? (organización, limpieza, coherencia visual...)" onchange="save()"></textarea>
+        </div>
+        
+        <div class="scale-row">
+            <div class="scale-title">😠 HOSTIL ↔ ACOGEDOR</div>
+            <div class="scale-desc">¿El espacio invita a quedarse o a irse?</div>
+            <div class="scale-btns" id="scale_percAcogedor"></div>
+            <textarea id="percAcogedorJust" placeholder="¿Qué elementos generan acogida o hostilidad? (materiales, colores, confort, humanización...)" onchange="save()"></textarea>
+        </div>
+        
+        <div class="scale-row">
+            <div class="scale-title">❓ CONFUSO ↔ CLARO</div>
+            <div class="scale-desc">¿Es fácil entender el espacio y qué hacer en él?</div>
+            <div class="scale-btns" id="scale_percClaro"></div>
+            <textarea id="percClaroJust" placeholder="¿Qué elementos generan claridad o confusión? (legibilidad, señalética, affordances...)" onchange="save()"></textarea>
+        </div>
+        
+        <div class="scale-row">
+            <div class="scale-title">😰 ESTRESANTE ↔ RELAJANTE</div>
+            <div class="scale-desc">¿El espacio genera tensión o calma?</div>
+            <div class="scale-btns" id="scale_percRelajante"></div>
+            <textarea id="percRelajanteJust" placeholder="¿Qué elementos generan estrés o relajación? (estimulación, predictibilidad, control...)" onchange="save()"></textarea>
+        </div>
+    </div>
+    ${navBtns(4, 6)}`;
+}
+
+// ===== SECTION 6: GUIÓN DE ACCIÓN (Criterio 4 cont.) =====
+function sectionGuionAccion() {
+    return `
+    <div class="card">
+        <h2>💡 Guion de Acción / Reconocimiento <span class="rubric-tag">CRITERIO 4</span></h2>
+        
+        <div class="tip-box">
+            <strong>💡 Concepto:</strong> El "guion de acción" es el conjunto de comportamientos que el espacio sugiere implícitamente. ¿Qué entiende el usuario que debe hacer aquí?
+        </div>
+        
+        <div class="form-group">
+            <label>🏛️ Función percibida del espacio *
+                <span class="label-hint">¿Qué entiende inmediatamente el usuario que es este lugar?</span>
+            </label>
+            <textarea id="funcionPercibida" placeholder="Ej: 'Se percibe claramente como una sala de espera médica por la presencia de sillas alineadas, mostrador de admisión y cartelería sanitaria...'" onchange="save()"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label>📜 Reglas implícitas del espacio *
+                <span class="label-hint">¿Qué comportamientos "sugiere" el espacio sin decirlo explícitamente?</span>
+            </label>
+            <textarea id="reglasImplicitas" placeholder="Ej: 'El espacio sugiere: hablar bajo, permanecer sentado, esperar turno, no tocar nada, mantener distancia con otros...'" onchange="save()"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label>🪑 Affordances del espacio *
+                <span class="label-hint">¿Qué "invita a hacer" el espacio físicamente?</span>
+            </label>
+            <textarea id="affordances" class="large" placeholder="Ej: 'Las sillas invitan a sentarse pero su rigidez no invita a relajarse. El mostrador alto invita a acercarse a preguntar. La máquina de café invita a levantarse. Los carteles en la pared NO invitan a ser leídos por su tamaño pequeño...'" onchange="save()"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label>📍 Puntos de referencia y jerarquía visual *
+                <span class="label-hint">¿Qué elementos organizan la atención y el movimiento?</span>
+            </label>
+            <textarea id="puntosReferencia" placeholder="Ej: 'El mostrador de admisión es el punto focal principal. La pantalla de turnos es el segundo. Las puertas de consulta están señalizadas pero poco visibles...'" onchange="save()"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label>🔄 Coherencia entre función y diseño
+                <span class="label-hint">¿El diseño del espacio facilita o dificulta su función?</span>
+            </label>
+            <textarea id="coherenciaFuncion" placeholder="Ej: 'Hay incoherencia: es una sala de espera pero el mobiliario no permite esperar cómodamente. La función requiere calma pero el espacio genera estrés...'" onchange="save()"></textarea>
+        </div>
+    </div>
+    ${navBtns(5, 7)}`;
+}
+
+// ===== SECTION 7: EMOCIÓN (Criterio 4 cont.) =====
+function sectionEmocion() {
+    return `
+    <div class="card">
+        <h2>❤️ Mapa Emocional <span class="rubric-tag">CRITERIO 4</span></h2>
+        
+        <div class="scale-row">
+            <div class="scale-title">💚 VALENCIA EMOCIONAL</div>
+            <div class="scale-desc">¿El espacio genera emociones agradables o desagradables?</div>
+            <div class="scale-labels"><span>0 = Muy desagradable</span><span>10 = Muy agradable</span></div>
+            <div class="scale-btns" id="scale_emoValencia"></div>
+            <textarea id="emoValenciaJust" placeholder="¿Por qué genera esa valencia? ¿Qué elementos contribuyen?" onchange="save()"></textarea>
+        </div>
+        
+        <div class="scale-row">
+            <div class="scale-title">⚡ ACTIVACIÓN EMOCIONAL</div>
+            <div class="scale-desc">¿El espacio genera activación alta o baja?</div>
+            <div class="scale-labels"><span>0 = Muy calmado</span><span>10 = Muy activado</span></div>
+            <div class="scale-btns" id="scale_emoActivacion"></div>
+            <textarea id="emoActivacionJust" placeholder="¿Por qué genera esa activación? ¿Qué elementos contribuyen?" onchange="save()"></textarea>
+        </div>
+        
+        <div style="margin-top:15px;">
+            <label style="font-weight:600;">📊 Cuadrante Emocional Resultante *</label>
+            <div class="quadrant-grid">
+                <div class="quadrant q1" id="qAltaNeg" onclick="selectQuad('alta-neg')">
+                    <strong>ALTA ACT. + NEGATIVA</strong>
+                    <span>Ansiedad, Estrés, Miedo, Irritación</span>
+                </div>
+                <div class="quadrant q2" id="qAltaPos" onclick="selectQuad('alta-pos')">
+                    <strong>ALTA ACT. + POSITIVA</strong>
+                    <span>Entusiasmo, Alegría, Excitación</span>
+                </div>
+                <div class="quadrant q3" id="qBajaNeg" onclick="selectQuad('baja-neg')">
+                    <strong>BAJA ACT. + NEGATIVA</strong>
+                    <span>Aburrimiento, Apatía, Tristeza</span>
+                </div>
+                <div class="quadrant q4" id="qBajaPos" onclick="selectQuad('baja-pos')">
+                    <strong>BAJA ACT. + POSITIVA</strong>
+                    <span>Calma, Serenidad, Relajación</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group" style="margin-top:15px;">
+            <label>Justificación del cuadrante elegido *</label>
+            <textarea id="cuadranteJust" placeholder="Explique por qué el espacio genera esta combinación de valencia y activación..." onchange="save()"></textarea>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>👤 Conductas Observables <span class="rubric-tag">CRITERIO 4</span></h2>
+        
+        <div class="tip-box">
+            <strong>💡 Para puntuación máxima:</strong> Identifique conductas OBSERVABLES (no emociones) que evidencian el estado emocional de los usuarios.
+        </div>
+        
+        <div class="form-group">
+            <label>Emoción principal esperada</label>
+            <input type="text" id="emocion1Nombre" placeholder="Ej: Ansiedad" onchange="save()">
+        </div>
+        <div class="form-group">
+            <label>Conductas observables asociadas *
+                <span class="label-hint">¿Qué comportamientos indicarían esta emoción?</span>
+            </label>
+            <textarea id="emocion1Conductas" placeholder="Ej: Mirar repetidamente el reloj/móvil, cambiar de posición frecuentemente, expresión facial tensa, morderse las uñas, hablar rápido..." onchange="save()"></textarea>
+        </div>
+        <div class="form-group">
+            <label>Estímulos disparadores de esta emoción *</label>
+            <textarea id="emocion1Disparadores" placeholder="Ej: Incertidumbre sobre tiempo de espera, falta de información, ruido impredecible, asientos incómodos..." onchange="save()"></textarea>
+        </div>
+        
+        <hr style="margin:20px 0;border:none;border-top:2px solid #eee;">
+        
+        <div class="form-group">
+            <label>Segunda emoción esperada (si aplica)</label>
+            <input type="text" id="emocion2Nombre" placeholder="Ej: Aburrimiento" onchange="save()">
+        </div>
+        <div class="form-group">
+            <label>Conductas observables asociadas</label>
+            <textarea id="emocion2Conductas" placeholder="Ej: Bostezos, mirada perdida, uso excesivo del móvil, suspiros..." onchange="save()"></textarea>
+        </div>
+        <div class="form-group">
+            <label>Estímulos disparadores</label>
+            <textarea id="emocion2Disparadores" placeholder="Ej: Falta de estímulos, espera prolongada, ausencia de distracciones positivas..." onchange="save()"></textarea>
+        </div>
+    </div>
+    ${navBtns(6, 8)}`;
+}
+
+// ===== SECTION 8: INTEGRACIÓN (Criterio 4 síntesis) =====
+function sectionIntegracion() {
+    return `
+    <div class="card">
+        <h2>🔗 Integración: Percepción → Acción → Emoción <span class="rubric-tag">CRITERIO 4</span></h2>
+        
+        <div class="required-box">
+            <h4>⚠️ SECCIÓN CRÍTICA PARA PUNTUACIÓN MÁXIMA</h4>
+            <p>El criterio 4 exige un "análisis integrado que vincula percepción, guion de acción, emoción y conductas observables".</p>
+        </div>
+        
+        <div class="integration-box">
+            <h3>🔄 Cadena Funcional Completa</h3>
+            
+            <div class="form-group">
+                <label>1. ESTÍMULO → PERCEPCIÓN *
+                    <span class="label-hint">¿Cómo los estímulos del espacio generan la percepción identificada?</span>
+                </label>
+                <textarea id="integracion1" class="large" placeholder="Ej: 'La iluminación fluorescente fría + los materiales duros + el ruido constante de fondo generan una PERCEPCIÓN de espacio hostil e institucional, no diseñado para el bienestar del usuario...'" onchange="save()"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>2. PERCEPCIÓN → GUION DE ACCIÓN *
+                    <span class="label-hint">¿Cómo la percepción del espacio determina qué comportamientos adopta el usuario?</span>
+                </label>
+                <textarea id="integracion2" class="large" placeholder="Ej: 'Esta percepción hostil genera un GUION DE ACCIÓN de "aguantar y esperar", no de "estar cómodo": el usuario se sienta rígido, evita moverse, mira frecuentemente la pantalla de turnos, no interactúa con otros...'" onchange="save()"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>3. GUION → EMOCIÓN *
+                    <span class="label-hint">¿Cómo el guion de acción resultante genera la respuesta emocional?</span>
+                </label>
+                <textarea id="integracion3" class="large" placeholder="Ej: 'Este guion de "aguantar" genera EMOCIONES negativas: ansiedad (por incertidumbre), frustración (por incomodidad), aburrimiento (por falta de estímulos positivos). El usuario no puede usar el espacio para reducir su estrés...'" onchange="save()"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>4. EMOCIÓN → CONDUCTA OBSERVABLE *
+                    <span class="label-hint">¿Qué conductas observables evidencian estas emociones?</span>
+                </label>
+                <textarea id="integracion4" class="large" placeholder="Ej: 'Se observan CONDUCTAS típicas de ansiedad: inquietud motora (cambios de posición), conductas de verificación (mirar reloj/móvil), expresiones de tensión facial, evitación de contacto visual con otros...'" onchange="save()"></textarea>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>📝 Síntesis: ¿El espacio cumple su función para la actividad objetivo? *</label>
+            <textarea id="sintesisFinal" class="large" placeholder="Considerando todo el análisis anterior, ¿el espacio permite realizar la actividad objetivo de forma óptima? ¿Por qué sí o por qué no? ¿Cuáles son los principales problemas y fortalezas?" onchange="save()"></textarea>
+        </div>
+    </div>
+    ${navBtns(7, 9)}`;
+}
+
+// ===== SECTION 9: INTERVENCIÓN (Criterio 5) =====
+function sectionIntervencion() {
+    return `
+    <div class="required-box">
+        <h4>📋 CRITERIO 5: Propuesta de microintervención (0-2 pts)</h4>
+        <ul>
+            <li>Propuestas <strong>realistas</strong> y bien argumentadas</li>
+            <li><strong>Coherentes con toda la cadena funcional</strong></li>
+            <li><strong>Reflexión final crítica</strong></li>
+        </ul>
+    </div>
+    
+    <div class="tip-box">
+        <strong>💡 Para puntuación máxima:</strong> Las intervenciones deben ser realistas (bajo coste, fácil implementación) y debe explicar cómo afectan a TODA la cadena: estímulo → percepción → guion → emoción → conducta.
+    </div>
+    
+    <div class="intervention">
+        <h3><span class="int-num">1</span> Primera Microintervención</h3>
+        
+        <div class="form-group">
+            <label>Nombre de la intervención *</label>
+            <input type="text" id="int1Nombre" placeholder="Ej: Mejora de la información de espera" onchange="save()">
+        </div>
+        
+        <div class="form-group">
+            <label>Descripción detallada del cambio propuesto *
+                <span class="label-hint">¿Qué cambiaría exactamente? Sea específico y realista.</span>
+            </label>
+            <textarea id="int1Descripcion" class="large" placeholder="Ej: 'Instalar una pantalla informativa que muestre: tiempo estimado de espera, número de personas delante, y mensajes tranquilizadores. Coste aproximado: 200€. Ubicación: sobre el mostrador de admisión...'" onchange="save()"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label>Justificación: ¿Por qué esta intervención? *
+                <span class="label-hint">Conecte con los problemas identificados en el análisis</span>
+            </label>
+            <textarea id="int1Justificacion" placeholder="Ej: 'Esta intervención aborda el problema principal identificado: la incertidumbre sobre el tiempo de espera, que es el principal disparador de ansiedad...'" onchange="save()"></textarea>
+        </div>
+        
+        <h4 style="margin:15px 0 10px;color:var(--primary);">Efecto esperado en la cadena funcional:</h4>
+        
+        <div class="chain-step"><span class="chain-arrow">1</span><input type="text" id="int1CadenaEstimulo" placeholder="Cambio en ESTÍMULO: ej. 'Añade información visual clara y actualizada'" onchange="save()"></div>
+        <div class="chain-step"><span class="chain-arrow">2</span><input type="text" id="int1CadenaPercepcion" placeholder="Cambio en PERCEPCIÓN: ej. 'Espacio más controlable y predecible'" onchange="save()"></div>
+        <div class="chain-step"><span class="chain-arrow">3</span><input type="text" id="int1CadenaGuion" placeholder="Cambio en GUION: ej. 'Usuario puede planificar su tiempo, no solo aguantar'" onchange="save()"></div>
+        <div class="chain-step"><span class="chain-arrow">4</span><input type="text" id="int1CadenaEmocion" placeholder="Cambio en EMOCIÓN: ej. 'Reduce ansiedad, aumenta sensación de control'" onchange="save()"></div>
+        <div class="chain-step"><span class="chain-arrow">5</span><input type="text" id="int1CadenaConducta" placeholder="Cambio en CONDUCTA: ej. 'Menos conductas de verificación, más relajación'" onchange="save()"></div>
+    </div>
+    
+    <div class="intervention">
+        <h3><span class="int-num">2</span> Segunda Microintervención</h3>
+        
+        <div class="form-group">
+            <label>Nombre de la intervención *</label>
+            <input type="text" id="int2Nombre" placeholder="Ej: Mejora del confort acústico" onchange="save()">
+        </div>
+        
+        <div class="form-group">
+            <label>Descripción detallada del cambio propuesto *</label>
+            <textarea id="int2Descripcion" class="large" placeholder="Describa el cambio específico, coste aproximado, ubicación..." onchange="save()"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label>Justificación: ¿Por qué esta intervención? *</label>
+            <textarea id="int2Justificacion" placeholder="Conecte con los problemas identificados..." onchange="save()"></textarea>
+        </div>
+        
+        <h4 style="margin:15px 0 10px;color:var(--primary);">Efecto esperado en la cadena funcional:</h4>
+        
+        <div class="chain-step"><span class="chain-arrow">1</span><input type="text" id="int2CadenaEstimulo" placeholder="Cambio en ESTÍMULO" onchange="save()"></div>
+        <div class="chain-step"><span class="chain-arrow">2</span><input type="text" id="int2CadenaPercepcion" placeholder="Cambio en PERCEPCIÓN" onchange="save()"></div>
+        <div class="chain-step"><span class="chain-arrow">3</span><input type="text" id="int2CadenaGuion" placeholder="Cambio en GUION" onchange="save()"></div>
+        <div class="chain-step"><span class="chain-arrow">4</span><input type="text" id="int2CadenaEmocion" placeholder="Cambio en EMOCIÓN" onchange="save()"></div>
+        <div class="chain-step"><span class="chain-arrow">5</span><input type="text" id="int2CadenaConducta" placeholder="Cambio en CONDUCTA" onchange="save()"></div>
+    </div>
+    
+    <div class="card">
+        <h2>🎯 Reflexión Final Crítica <span class="rubric-tag">CRITERIO 5</span></h2>
+        
+        <div class="form-group">
+            <label>Limitaciones del análisis realizado *
+                <span class="label-hint">¿Qué aspectos no pudo evaluar? ¿Qué sesgos puede tener su observación?</span>
+            </label>
+            <textarea id="reflexionLimitaciones" placeholder="Ej: 'El análisis se realizó en un único momento del día (mañana), por lo que no refleja la variabilidad de ocupación. No se pudo entrevistar a usuarios. Mi propia experiencia previa con hospitales puede sesgar la percepción...'" onchange="save()"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label>Aprendizajes y conclusiones *
+                <span class="label-hint">¿Qué ha aprendido de este análisis? ¿Qué principios generales extrae?</span>
+            </label>
+            <textarea id="reflexionAprendizajes" class="large" placeholder="Ej: 'Este análisis evidencia cómo pequeños elementos (información, confort, predictibilidad) tienen un impacto desproporcionado en la experiencia emocional. Un espacio puede ser funcionalmente correcto pero emocionalmente inadecuado...'" onchange="save()"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label>Recomendaciones para futuros análisis
+                <span class="label-hint">¿Qué haría diferente? ¿Qué información adicional sería útil?</span>
+            </label>
+            <textarea id="reflexionRecomendaciones" placeholder="Ej: 'Sería útil realizar el análisis en diferentes momentos del día, incluir entrevistas breves a usuarios, y comparar con espacios similares bien diseñados...'" onchange="save()"></textarea>
+        </div>
+    </div>
+    ${navBtns(8, 10)}`;
+}
+
+// ===== SECTION 10: EXPORT =====
+function sectionExport() {
+    return `
+    <div class="card">
+        <h2>✅ Ficha Completada</h2>
+        
+        <div class="checklist" id="completionChecklist">
+            <h4>📋 Verificación de criterios:</h4>
+            <div id="checklistItems"></div>
+        </div>
+        
+        <div class="form-group">
+            <label>📝 Notas adicionales</label>
+            <textarea id="notasFinales" placeholder="Cualquier observación adicional..." onchange="save()"></textarea>
+        </div>
+    </div>
+    
+    <div class="export-box">
+        <h3>📤 Exportar Datos</h3>
+        <div class="export-btns">
+            <button class="export-btn" onclick="copyCurrentForSheets()">📋 Copiar para Sheets</button>
+            <button class="export-btn" onclick="exportCurrentJSON()">📄 JSON</button>
+            <button class="export-btn" onclick="generateReport()">📝 Relatório</button>
+        </div>
+        <div class="copy-area" id="currentCopyArea">
+            <textarea id="currentCopyText" readonly onclick="this.select()"></textarea>
+        </div>
+    </div>
+    
+    <div class="export-box">
+        <h3>📁 Gestão</h3>
+        <div class="export-btns">
+            <button class="export-btn" onclick="newForm()">➕ Nova Ficha</button>
+            <button class="export-btn" onclick="duplicateForm()">📋 Duplicar</button>
+            <button class="export-btn" onclick="showModal('formsModal'); renderFormsList();">📁 Ver Todas</button>
+        </div>
+    </div>
+    ${navBtns(9, null)}`;
+}
+
+function navBtns(prev, next) {
+    var html = '<div class="nav-btns">';
+    html += prev !== null ? '<button class="btn btn-secondary" onclick="goTo(' + prev + ')">← Anterior</button>' : '<div></div>';
+    html += next !== null ? '<button class="btn btn-primary" onclick="goTo(' + next + ')">Siguiente →</button>' : '<button class="btn btn-success" onclick="save(); toast(\'Guardado!\');">💾 Guardar</button>';
+    return html + '</div>';
+}
+
+// ===== SCALES =====
+function initAllScales() {
+    var scales = [
+        { id: 'atSelectiva', min: 0 },
+        { id: 'atSostenida', min: 0 },
+        { id: 'atOrientacion', min: 0 },
+        { id: 'atEjecutivo', min: 0 },
+        { id: 'atDividida', min: 0 },
+        { id: 'percSeguro', min: 1 },
+        { id: 'percOrdenado', min: 1 },
+        { id: 'percAcogedor', min: 1 },
+        { id: 'percClaro', min: 1 },
+        { id: 'percRelajante', min: 1 },
+        { id: 'emoValencia', min: 0 },
+        { id: 'emoActivacion', min: 0 }
+    ];
+    scales.forEach(function(s) { createScaleButtons(s.id, s.min); });
+}
+
+function createScaleButtons(scaleId, minVal) {
+    var container = document.getElementById('scale_' + scaleId);
+    if (!container) return;
+    container.innerHTML = '';
+    for (var i = minVal; i <= 10; i++) {
+        var btn = document.createElement('button');
+        btn.className = 'scale-btn';
+        btn.textContent = i;
+        btn.setAttribute('data-val', i);
+        btn.onclick = (function(sid, val) {
+            return function() { selectScale(sid, val); };
+        })(scaleId, i);
+        container.appendChild(btn);
+    }
+}
+
+function selectScale(scaleId, val) {
+    var form = APP.forms[APP.currentFormId];
+    if (!form.scales) form.scales = {};
+    form.scales[scaleId] = val;
+    
+    var container = document.getElementById('scale_' + scaleId);
+    if (container) {
+        container.querySelectorAll('.scale-btn').forEach(function(b) { b.classList.remove('selected'); });
+        var btn = container.querySelector('[data-val="' + val + '"]');
+        if (btn) btn.classList.add('selected');
+    }
+    save();
+}
+
+// ===== NAVIGATION =====
+function goTo(n) {
+    save();
+    document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
+    document.querySelectorAll('.nav button').forEach(function(b) { b.classList.remove('active'); });
+    document.getElementById('sec' + n).classList.add('active');
+    document.querySelectorAll('.nav button')[n].classList.add('active');
+    APP.currentSection = n;
+    window.scrollTo(0, 0);
+}
+
+// ===== FORMS =====
+function loadForms() {
+    try { APP.forms = JSON.parse(localStorage.getItem('neuroForms') || '{}'); }
+    catch(e) { APP.forms = {}; }
+}
+
+function saveForms() {
+    localStorage.setItem('neuroForms', JSON.stringify(APP.forms));
+    updateSyncStatus();
+}
+
+function newForm() {
+    var id = 'f' + Date.now();
+    APP.forms[id] = {
+        id: id,
+        created: new Date().toISOString(),
+        modified: new Date().toISOString(),
+        synced: false,
+        data: { fecha: new Date().toISOString().split('T')[0] },
+        scales: {},
+        quadrant: null,
+        stimuli: {},
+        photos: {}
+    };
+    saveForms();
+    loadForm(id);
+    toast('Nova ficha criada!');
+}
+
+function loadForm(id) {
+    if (!APP.forms[id]) return;
+    APP.currentFormId = id;
+    localStorage.setItem('lastFormId', id);
+    var form = APP.forms[id];
+    
+    // Clear all
+    document.querySelectorAll('input[type="text"], input[type="date"], input[type="time"], input[type="number"], textarea, select').forEach(function(el) { el.value = ''; });
+    document.querySelectorAll('input[type="radio"]').forEach(function(el) { el.checked = false; el.closest('.radio-item') && el.closest('.radio-item').classList.remove('selected'); });
+    document.querySelectorAll('.scale-btn').forEach(function(el) { el.classList.remove('selected'); });
+    document.querySelectorAll('.quadrant').forEach(function(el) { el.classList.remove('selected'); });
+    document.querySelectorAll('.stim-btn').forEach(function(el) { el.classList.remove('selected'); });
+    document.querySelectorAll('.photo-upload').forEach(function(el) { el.classList.remove('has-image'); var img = el.querySelector('img'); if (img) img.remove(); });
+    
+    // Load data
+    if (form.data) {
+        Object.keys(form.data).forEach(function(k) {
+            var el = document.getElementById(k);
+            if (el) el.value = form.data[k];
+        });
+        if (form.data.actividad) {
+            var r = document.querySelector('input[name="actividad"][value="' + form.data.actividad + '"]');
+            if (r) { r.checked = true; var ri = r.closest('.radio-item'); if (ri) ri.classList.add('selected'); }
+        }
+    }
+    
+    // Load scales
+    if (form.scales) {
+        Object.keys(form.scales).forEach(function(s) {
+            var container = document.getElementById('scale_' + s);
+            if (container) {
+                var btn = container.querySelector('[data-val="' + form.scales[s] + '"]');
+                if (btn) btn.classList.add('selected');
+            }
+        });
+    }
+    
+    // Load quadrant
+    if (form.quadrant) {
+        var qMap = { 'alta-neg': 'qAltaNeg', 'alta-pos': 'qAltaPos', 'baja-neg': 'qBajaNeg', 'baja-pos': 'qBajaPos' };
+        var qEl = document.getElementById(qMap[form.quadrant]);
+        if (qEl) qEl.classList.add('selected');
+    }
+    
+    // Load stimuli
+    if (form.stimuli) {
+        Object.keys(form.stimuli).forEach(function(k) {
+            var btn = document.getElementById(k + form.stimuli[k]);
+            if (btn) btn.classList.add('selected');
+        });
+    }
+    
+    updateBadge();
+    updateSyncStatus();
+}
+
+function save() {
+    if (!APP.currentFormId) return;
+    var form = APP.forms[APP.currentFormId];
+    if (!form) return;
+    
+    var data = {};
+    document.querySelectorAll('input[type="text"], input[type="date"], input[type="time"], input[type="number"], textarea, select').forEach(function(el) {
+        if (el.id) data[el.id] = el.value;
+    });
+    
+    var actRadio = document.querySelector('input[name="actividad"]:checked');
+    if (actRadio) data.actividad = actRadio.value;
+    
+    form.data = data;
+    form.modified = new Date().toISOString();
+    form.synced = false;
+    
+    saveForms();
+    updateBadge();
+    document.getElementById('statusText').textContent = '💾 Guardado';
+}
+
+function deleteForm(id) {
+    if (!confirm('Eliminar esta ficha?')) return;
+    delete APP.forms[id];
+    saveForms();
+    if (id === APP.currentFormId) {
+        var keys = Object.keys(APP.forms);
+        if (keys.length > 0) loadForm(keys[0]);
+        else newForm();
+    }
+    renderFormsList();
+    toast('Eliminada');
+}
+
+function duplicateForm() {
+    save();
+    var curr = APP.forms[APP.currentFormId];
+    if (!curr) return;
+    var newId = 'f' + Date.now();
+    var newF = JSON.parse(JSON.stringify(curr));
+    newF.id = newId;
+    newF.created = new Date().toISOString();
+    newF.synced = false;
+    APP.forms[newId] = newF;
+    saveForms();
+    loadForm(newId);
+    toast('Duplicada!');
+}
+
+function updateBadge() {
+    var form = APP.forms[APP.currentFormId];
+    var name = 'Nova';
+    if (form && form.data) {
+        if (form.data.nombreEspacio) name = form.data.nombreEspacio;
+        else if (form.data.nombre) name = form.data.nombre;
+    }
+    document.getElementById('currentFormBadge').textContent = name.substring(0, 12);
+}
+
+function renderFormsList() {
+    var list = document.getElementById('formsList');
+    var keys = Object.keys(APP.forms).sort(function(a, b) {
+        return new Date(APP.forms[b].modified) - new Date(APP.forms[a].modified);
+    });
+    
+    if (keys.length === 0) {
+        list.innerHTML = '<p style="text-align:center;color:#888;padding:20px;">Sem fichas guardadas</p>';
+        return;
+    }
+    
+    list.innerHTML = keys.map(function(id) {
+        var f = APP.forms[id];
+        var name = (f.data && f.data.nombreEspacio) || (f.data && f.data.nombre) || 'Sem nome';
+        var date = new Date(f.modified).toLocaleDateString('pt-PT');
+        var active = id === APP.currentFormId ? 'active' : '';
+        var syncClass = f.synced ? 'synced' : 'pending';
+        return '<div class="form-item ' + active + ' ' + syncClass + '" onclick="loadForm(\'' + id + '\'); closeModal(\'formsModal\');">' +
+            '<div class="form-item-icon">📋</div>' +
+            '<div class="form-item-info"><div class="form-item-title">' + name + '</div><div class="form-item-meta">' + date + '</div></div>' +
+            '<button class="form-item-btn delete" onclick="event.stopPropagation(); deleteForm(\'' + id + '\');">🗑️</button></div>';
+    }).join('');
+}
+
+// ===== SELECTIONS =====
+function selectRadio(item, name, val) {
+    document.querySelectorAll('input[name="' + name + '"]').forEach(function(r) {
+        var ri = r.closest('.radio-item');
+        if (ri) ri.classList.remove('selected');
+    });
+    item.classList.add('selected');
+    item.querySelector('input').checked = true;
+    save();
+}
+
+function selectQuad(q) {
+    var form = APP.forms[APP.currentFormId];
+    form.quadrant = q;
+    document.querySelectorAll('.quadrant').forEach(function(el) { el.classList.remove('selected'); });
+    var qMap = { 'alta-neg': 'qAltaNeg', 'alta-pos': 'qAltaPos', 'baja-neg': 'qBajaNeg', 'baja-pos': 'qBajaPos' };
+    document.getElementById(qMap[q]).classList.add('selected');
+    save();
+}
+
+function toggleSN(stim, type) {
+    var form = APP.forms[APP.currentFormId];
+    if (!form.stimuli) form.stimuli = {};
+    var btnS = document.getElementById(stim + 'S');
+    var btnR = document.getElementById(stim + 'R');
+    if (btnS) btnS.classList.remove('selected');
+    if (btnR) btnR.classList.remove('selected');
+    var btn = document.getElementById(stim + type);
+    if (btn) btn.classList.add('selected');
+    form.stimuli[stim] = type;
+    save();
+}
+
+function handlePhoto(input, photoId) {
+    var file = input.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var container = document.getElementById(photoId);
+        var img = container.querySelector('img');
+        if (!img) { img = document.createElement('img'); container.appendChild(img); }
+        img.src = e.target.result;
+        container.classList.add('has-image');
+        var form = APP.forms[APP.currentFormId];
+        if (!form.photos) form.photos = {};
+        form.photos[photoId] = e.target.result;
+        save();
+    };
+    reader.readAsDataURL(file);
+}
+
+// ===== NETWORK =====
+function setupNetwork() {
+    updateNetworkStatus();
+    window.addEventListener('online', updateNetworkStatus);
+    window.addEventListener('offline', updateNetworkStatus);
+}
+
+function updateNetworkStatus() {
+    APP.isOnline = navigator.onLine;
+    var badge = document.getElementById('networkBadge');
+    badge.textContent = APP.isOnline ? '🌐 Online' : '📴 Offline';
+    badge.className = 'badge ' + (APP.isOnline ? 'badge-online' : 'badge-offline');
+    updateSyncStatus();
+}
+
+function updateSyncStatus() {
+    var pending = Object.values(APP.forms).filter(function(f) { return !f.synced; }).length;
+    var bar = document.getElementById('syncBar');
+    var info = document.getElementById('syncInfo');
+    var statusBar = document.getElementById('statusBar');
+    var pendingEl = document.getElementById('pendingCount');
+    
+    if (pending > 0) {
+        bar.className = 'sync-bar pending';
+        info.textContent = '⏳ ' + pending + ' ficha(s) por exportar';
+        statusBar.className = 'status-bar has-pending';
+        pendingEl.textContent = pending + ' pendentes';
+    } else {
+        bar.className = 'sync-bar';
+        info.textContent = '✓ Exportado';
+        statusBar.className = 'status-bar';
+        pendingEl.textContent = Object.keys(APP.forms).length + ' fichas';
+    }
+}
+
+// ===== EXPORT =====
+function copyCurrentForSheets() {
+    save();
+    var f = APP.forms[APP.currentFormId];
+    var text = generateSheetsRow(f);
+    document.getElementById('currentCopyText').value = text;
+    document.getElementById('currentCopyArea').classList.add('show');
+    toast('Pronto! Selecione tudo e copie');
+}
+
+function copyAllForSheets() {
+    save();
+    var headers = getHeaders().join('\t');
+    var rows = Object.values(APP.forms).map(function(f) { return getRowData(f).join('\t'); });
+    document.getElementById('sheetsText').value = headers + '\n' + rows.join('\n');
+    document.getElementById('sheetsArea').classList.add('show');
+    toast('Pronto para copiar!');
+}
+
+function getHeaders() {
+    return ['ID','Fecha','Espacio','Ubicacion','Actividad','Contexto','atSelectiva','atSostenida','atOrientacion','atEjecutivo','atDividida','percSeguro','percOrdenado','percAcogedor','percClaro','percRelajante','emoValencia','emoActivacion','Cuadrante','Int1Nombre','Int2Nombre','Reflexion'];
+}
+
+function getRowData(f) {
+    var d = f.data || {};
+    var s = f.scales || {};
+    return [
+        f.id,
+        d.fecha || '',
+        d.nombreEspacio || '',
+        d.ubicacion || '',
+        d.actividad || '',
+        (d.contextoEspacio || '').substring(0, 100),
+        s.atSelectiva !== undefined ? s.atSelectiva : '',
+        s.atSostenida !== undefined ? s.atSostenida : '',
+        s.atOrientacion !== undefined ? s.atOrientacion : '',
+        s.atEjecutivo !== undefined ? s.atEjecutivo : '',
+        s.atDividida !== undefined ? s.atDividida : '',
+        s.percSeguro !== undefined ? s.percSeguro : '',
+        s.percOrdenado !== undefined ? s.percOrdenado : '',
+        s.percAcogedor !== undefined ? s.percAcogedor : '',
+        s.percClaro !== undefined ? s.percClaro : '',
+        s.percRelajante !== undefined ? s.percRelajante : '',
+        s.emoValencia !== undefined ? s.emoValencia : '',
+        s.emoActivacion !== undefined ? s.emoActivacion : '',
+        f.quadrant || '',
+        d.int1Nombre || '',
+        d.int2Nombre || '',
+        (d.reflexionAprendizajes || '').substring(0, 100)
+    ];
+}
+
+function generateSheetsRow(f) {
+    return getHeaders().join('\t') + '\n' + getRowData(f).join('\t');
+}
+
+function exportAllJSON() {
+    save();
+    var data = { exported: new Date().toISOString(), forms: APP.forms };
+    downloadFile(JSON.stringify(data, null, 2), 'fichas_backup_' + new Date().toISOString().split('T')[0] + '.json', 'application/json');
+    Object.keys(APP.forms).forEach(function(id) { APP.forms[id].synced = true; });
+    saveForms();
+    toast('Backup exportado!');
+}
+
+function exportCurrentJSON() {
+    save();
+    var f = APP.forms[APP.currentFormId];
+    downloadFile(JSON.stringify(f, null, 2), 'ficha_' + (f.data.nombreEspacio || f.id) + '.json', 'application/json');
+    f.synced = true;
+    saveForms();
+    toast('Exportado!');
+}
+
+function exportAllCSV() {
+    save();
+    var headers = getHeaders().join(',');
+    var rows = Object.values(APP.forms).map(function(f) {
+        return getRowData(f).map(function(v) { return '"' + (v + '').replace(/"/g, '""') + '"'; }).join(',');
+    });
+    downloadFile(headers + '\n' + rows.join('\n'), 'fichas_' + new Date().toISOString().split('T')[0] + '.csv', 'text/csv');
+    Object.keys(APP.forms).forEach(function(id) { APP.forms[id].synced = true; });
+    saveForms();
+    toast('CSV exportado!');
+}
+
+function generateReport() {
+    save();
+    var f = APP.forms[APP.currentFormId];
+    var d = f.data || {};
+    var s = f.scales || {};
+    
+    var report = '═══════════════════════════════════════════════════════════════\n';
+    report += 'FICHA DE CAMPO - NEUROARQUITECTURA - ANÁLISIS COMPLETO\n';
+    report += '═══════════════════════════════════════════════════════════════\n\n';
+    report += 'Fecha: ' + (d.fecha || '') + ' | Observador: ' + (d.nombre || '') + '\n';
+    report += 'Espacio: ' + (d.nombreEspacio || '') + '\n';
+    report += 'Ubicación: ' + (d.ubicacion || '') + '\n\n';
+    
+    report += '─── CRITERIO 1: SELECCIÓN Y DESCRIPCIÓN DEL ESPACIO ───\n\n';
+    report += 'CONTEXTO:\n' + (d.contextoEspacio || '(No completado)') + '\n\n';
+    report += 'ACTIVIDAD OBJETIVO: ' + (d.actividad || '') + '\n';
+    report += 'JUSTIFICACIÓN: ' + (d.actividadJustificacion || '') + '\n\n';
+    
+    report += '─── CRITERIO 2: ESTIMULACIÓN AMBIENTAL Y SENSORIAL ───\n\n';
+    report += 'VISUAL: ' + (d.estVisual || '') + '\n\n';
+    report += 'AUDITIVO: ' + (d.estAuditivo || '') + '\n\n';
+    report += 'OLFATIVO: ' + (d.estOlfativo || '') + '\n\n';
+    report += 'TÉRMICO: ' + (d.estTermico || '') + '\n\n';
+    report += 'TÁCTIL: ' + (d.estTactil || '') + '\n\n';
+    report += 'ESPACIAL: ' + (d.estEspacial || '') + '\n\n';
+    report += 'CONFLICTOS SENSORIALES: ' + (d.conflictosSensoriales || '') + '\n\n';
+    
+    report += '─── CRITERIO 3: REGISTRO ATENCIONAL ───\n\n';
+    report += 'Selectiva: ' + (s.atSelectiva !== undefined ? s.atSelectiva + '/10' : 'N/A') + '\n' + (d.atSelectivaJust || '') + '\n\n';
+    report += 'Sostenida: ' + (s.atSostenida !== undefined ? s.atSostenida + '/10' : 'N/A') + '\n' + (d.atSostenidaJust || '') + '\n\n';
+    report += 'Orientación: ' + (s.atOrientacion !== undefined ? s.atOrientacion + '/10' : 'N/A') + '\n' + (d.atOrientacionJust || '') + '\n\n';
+    report += 'Ejecutivo: ' + (s.atEjecutivo !== undefined ? s.atEjecutivo + '/10' : 'N/A') + '\n' + (d.atEjecutivoJust || '') + '\n\n';
+    report += 'Dividida: ' + (s.atDividida !== undefined ? s.atDividida + '/10' : 'N/A') + '\n' + (d.atDivididaJust || '') + '\n\n';
+    report += 'SÍNTESIS: ' + (d.sintesisAtencion || '') + '\n\n';
+    
+    report += '─── CRITERIO 4: ANÁLISIS PERCEPTIVO Y EMOCIONAL ───\n\n';
+    report += 'Seguro: ' + (s.percSeguro || 'N/A') + '/10 - ' + (d.percSeguroJust || '') + '\n';
+    report += 'Ordenado: ' + (s.percOrdenado || 'N/A') + '/10 - ' + (d.percOrdenadoJust || '') + '\n';
+    report += 'Acogedor: ' + (s.percAcogedor || 'N/A') + '/10 - ' + (d.percAcogedorJust || '') + '\n';
+    report += 'Claro: ' + (s.percClaro || 'N/A') + '/10 - ' + (d.percClaroJust || '') + '\n';
+    report += 'Relajante: ' + (s.percRelajante || 'N/A') + '/10 - ' + (d.percRelajanteJust || '') + '\n\n';
+    
+    report += 'GUION DE ACCIÓN:\n';
+    report += 'Función: ' + (d.funcionPercibida || '') + '\n';
+    report += 'Reglas: ' + (d.reglasImplicitas || '') + '\n';
+    report += 'Affordances: ' + (d.affordances || '') + '\n\n';
+    
+    report += 'EMOCIÓN:\n';
+    report += 'Valencia: ' + (s.emoValencia || 'N/A') + '/10 | Activación: ' + (s.emoActivacion || 'N/A') + '/10\n';
+    report += 'Cuadrante: ' + (f.quadrant || '') + '\n';
+    report += 'Justificación: ' + (d.cuadranteJust || '') + '\n\n';
+    
+    report += 'INTEGRACIÓN CADENA FUNCIONAL:\n';
+    report += '1. Estímulo→Percepción: ' + (d.integracion1 || '') + '\n';
+    report += '2. Percepción→Guion: ' + (d.integracion2 || '') + '\n';
+    report += '3. Guion→Emoción: ' + (d.integracion3 || '') + '\n';
+    report += '4. Emoción→Conducta: ' + (d.integracion4 || '') + '\n\n';
+    
+    report += '─── CRITERIO 5: MICROINTERVENCIONES ───\n\n';
+    report += 'INTERVENCIÓN 1: ' + (d.int1Nombre || '') + '\n';
+    report += (d.int1Descripcion || '') + '\n';
+    report += 'Justificación: ' + (d.int1Justificacion || '') + '\n';
+    report += 'Cadena: ' + (d.int1CadenaEstimulo || '') + ' → ' + (d.int1CadenaPercepcion || '') + ' → ' + (d.int1CadenaGuion || '') + ' → ' + (d.int1CadenaEmocion || '') + ' → ' + (d.int1CadenaConducta || '') + '\n\n';
+    
+    report += 'INTERVENCIÓN 2: ' + (d.int2Nombre || '') + '\n';
+    report += (d.int2Descripcion || '') + '\n\n';
+    
+    report += 'REFLEXIÓN FINAL:\n';
+    report += 'Limitaciones: ' + (d.reflexionLimitaciones || '') + '\n';
+    report += 'Aprendizajes: ' + (d.reflexionAprendizajes || '') + '\n\n';
+    
+    report += '═══════════════════════════════════════════════════════════════\n';
+    
+    document.getElementById('currentCopyText').value = report;
+    document.getElementById('currentCopyArea').classList.add('show');
+    toast('Relatório gerado!');
+}
+
+function downloadFile(content, filename, type) {
+    var blob = new Blob([content], { type: type + ';charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function importBackup(input) {
+    var file = input.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            var data = JSON.parse(e.target.result);
+            if (data.forms) {
+                var count = 0;
+                Object.keys(data.forms).forEach(function(id) {
+                    if (!APP.forms[id]) { APP.forms[id] = data.forms[id]; count++; }
+                });
+                saveForms();
+                toast('Importadas ' + count + ' fichas!');
+                renderFormsList();
+            }
+        } catch(err) { toast('Erro ao importar'); }
+    };
+    reader.readAsText(file);
+}
+
+// ===== MODALS =====
+function showModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function showSyncModal() { showModal('syncModal'); }
+
+function toast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function() { t.classList.remove('show'); }, 3000);
+}
+
+// ===== INIT =====
+init();
+</script>
+
+</body>
+</html>
