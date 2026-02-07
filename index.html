@@ -130,7 +130,8 @@
         .integration-box { background: linear-gradient(135deg, #e8f4f8, #fff); border: 2px solid var(--info); border-radius: 10px; padding: 15px; margin-bottom: 15px; }
         .integration-box h3 { color: var(--info); margin-bottom: 10px; font-size: 0.95rem; }
         
-        .btn { display: inline-block; padding: 12px 18px; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; text-align: center; }
+        .btn { display: inline-block; padding: 12px 18px; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; text-align: center; -webkit-appearance: none; -webkit-touch-callout: none; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+        .btn:active { opacity: 0.8; transform: scale(0.98); }
         .btn-primary { background: var(--primary); color: #fff; }
         .btn-secondary { background: #eee; color: #333; }
         .btn-success { background: var(--success); color: #fff; }
@@ -1130,8 +1131,8 @@ function sectionExport() {
 
 function navBtns(prev, next) {
     var html = '<div class="nav-btns">';
-    html += prev !== null ? '<button class="btn btn-secondary" onclick="goTo(' + prev + ')">← Anterior</button>' : '<div></div>';
-    html += next !== null ? '<button class="btn btn-primary" onclick="goTo(' + next + ')">Siguiente →</button>' : '<button class="btn btn-success" onclick="save(); toast(\'Guardado!\');">💾 Guardar</button>';
+    html += prev !== null ? '<button type="button" class="btn btn-secondary" data-goto="' + prev + '">← Anterior</button>' : '<div></div>';
+    html += next !== null ? '<button type="button" class="btn btn-primary" data-goto="' + next + '">Siguiente →</button>' : '<button type="button" class="btn btn-success" data-action="save">💾 Guardar</button>';
     return html + '</div>';
 }
 
@@ -1658,6 +1659,36 @@ function toast(msg) {
     t.classList.add('show');
     setTimeout(function() { t.classList.remove('show'); }, 3000);
 }
+
+// ===== GLOBAL EVENT LISTENER FOR iOS COMPATIBILITY =====
+document.addEventListener('click', function(e) {
+    var target = e.target;
+    
+    // Handle navigation buttons
+    if (target.hasAttribute('data-goto')) {
+        e.preventDefault();
+        var section = parseInt(target.getAttribute('data-goto'));
+        goTo(section);
+        return;
+    }
+    
+    // Handle save button
+    if (target.hasAttribute('data-action') && target.getAttribute('data-action') === 'save') {
+        e.preventDefault();
+        save();
+        toast('Guardado!');
+        return;
+    }
+    
+    // Handle parent clicks (in case button has child elements)
+    var parent = target.parentElement;
+    if (parent && parent.hasAttribute('data-goto')) {
+        e.preventDefault();
+        var section = parseInt(parent.getAttribute('data-goto'));
+        goTo(section);
+        return;
+    }
+});
 
 // ===== INIT =====
 init();

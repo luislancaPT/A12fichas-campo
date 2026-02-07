@@ -1,5 +1,5 @@
 // Service Worker for Fichas de Campo PWA
-const CACHE_NAME = 'fichas-campo-v1';
+const CACHE_NAME = 'fichas-campo-v3';
 const urlsToCache = [
   './',
   './index.html',
